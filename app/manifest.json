@@ -11,11 +11,15 @@
   "background": {
     "scripts": [
       "scripts/chromereload.js",
+      "bower_components/socket.io.js",
       "bower_components/jquery/dist/jquery.min.js",
+      "bower_components/node-uuid/uuid.js",
       "scripts/background.js"
     ]
   },
   "permissions": [
+    "alarms",
+    "identity",
     "tabs",
     "http://*/*",
     "https://*/*",
@@ -23,6 +27,7 @@
     "cookies",
     "*://*.google.com/",
     "*://twitter.com/*",
+    "gcm",
     "notifications",
     "storage",
     "unlimitedStorage",
