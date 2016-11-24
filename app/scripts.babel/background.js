@@ -5,6 +5,7 @@ socket.on('connect', function(){});
 socket.on('event', function(data){});
 socket.on('disconnect', function(){});
 
+let isoverlapped;
 
 chrome.runtime.onInstalled.addListener(details => {
   console.log('previousVersion', details.previousVersion);
@@ -13,7 +14,7 @@ chrome.runtime.onInstalled.addListener(details => {
   console.log('your ClientID=', localStorage['clientID']);
 });
 
-chrome.alarms.create('reqTweet', { periodInMinutes: 1 });
+// chrome.alarms.create('reqTweet', { periodInMinutes: 1 });
 
 chrome.webRequest.onBeforeRequest.addListener(
   function(details) {
@@ -25,112 +26,77 @@ chrome.webRequest.onBeforeRequest.addListener(
     // }
     // let repURL = details.url;
     // let repURLarray = repURL.split('/');
-    localStorage['localBody'] = details.requestBody.formData;
-    let repUUID = uuid.v1();
-    let repComment = '';
-    let isOK = false;
-    let authToken = details.requestBody.formData.authenticity_token.toString();
-    let repTW = details.requestBody.formData.status.toString();
+    // console.log(repURL);
+
+    // localStorage['localBody'] = details.requestBody;
+    localStorage['repUUID'] = uuid.v1();
+    localStorage['repComment'] = '';
+    localStorage['isOK'] = false;
+    localStorage['authToken'] = details.requestBody.formData.authenticity_token.toString();
+
     // let repID = turlarray[5];
-    let in_reply_to_status_id = details.requestBody.formData.in_reply_to_status_id.toString();
-    if (repTW.indexOf('@') !== -1){
-      // console.log(details.requestBody);
-      // socket.emit('send_Body', {
-      //   sendHeaders: details.requestBody.formData
-      // });
-      // toHeaders(clientID,authToken,repID,repTW,repUUID,repComment,repURL,isOK);
-      toHeaders(authToken,in_reply_to_status_id,repTW,repUUID);
-      // return {cancel: true};
-      //socket.on('confirmed' function(data){});
+    if(details.requestBody.formData.status.toString() !== localStorage['repTW']){
+      localStorage['repTW'] = details.requestBody.formData.status.toString();
+      isoverlapped = false;
     }else{
-      return {cancel: false};
+      isoverlapped =true;
+      console.log('重複が存在します');
     }
+    localStorage['in_reply_to_status_id'] = details.requestBody.formData.in_reply_to_status_id.toString();
+    // console.log('sendBody=' + details.requestBody.requestBody.formData.toString());
+      return {cancel: false};
   },
-  {urls: ['*://twitter.com/i/tweet/create*','*://twitter.com/i/tweet/retweet*']},
+  {urls: ['*://twitter.com/i/tweet/create*','*://twitter.com/i/tweet/retweet*','https://api.twitter.com/1.1/statuses/update.json']},
   ['requestBody','blocking']);
 
-const toHeaders = (authToken,in_reply_to_status_id,repTW,repUUID) =>{
   chrome.webRequest.onBeforeSendHeaders.addListener(
     function(details){
-      localStorage['localHeader'] = details.requestHeaders ;
-      let repURL = details.requestHeaders[6].value;
-      console.log(repURL);
-      let repComment = '';
-      new Notification('POST_pone', { tag: 'dev', body: '次のツイートが取り置かれました\n' + repTW });
+      // localStorage['localHeader'] = details.requestHeaders ;
+      localStorage['repURL'] = details.requestHeaders[6].value;
+      console.log(localStorage['repURL']);
 
-      var confirm_result = null ;
-
-      // socket.emit('test_onack', {testmessage: 'hello!'}, function onack(response){
-      //   console.log(response);
-      //   }
-      // );
-
-      post(data).then(function(response) {
-        doSomethingWith(response);
-      });
-
-      function post(data) {
-        return new Promise(function(resolve, reject) {
-          socket.emit("post_tweet", data, resolve);
-        });
+      if(localStorage['repTW'].indexOf('@') !== -1){
+          requestReview();
+        return {cancel: true};
+      }else{
+        return {cancel: false};
       }
-
-      socket.emit('post_tweet',{
-        clientID: localStorage['clientID'],
-        authToken: authToken,
-        repUUID: repUUID,
-        in_reply_to_status_id: in_reply_to_status_id,
-        repTW: repTW,
-        repComment: repComment,
-        repURL: repURL,
-        sendPerson: '',
-        isOK: false
-      }, function onack(response){
-        console.log(response);
-        if(response.confirm_result == true){
-          // return {cancel: false};
-          confirm_result = false;
-        }else{
-          new Notification('POST_pone', { tag: 'dev', body: '査読結果が出ました。\n' + response.draft_Text });
-          // return {cancel: true};
-          confirm_result = true;
-        }
-      });
-
-      return {cancel: confirm_result};
-      //   let pURL = 'http://localhost:3000/api/tweets' + repUUID;
-      //   let postData = {
-      //                   'clientID': localStorage['clientID']
-      //                   ,'repUUID': repUUID
-      //                   ,'authToken':authToken
-      //                   , 'repID':in_reply_to_status_id
-      //                   , 'repTW':repTW
-      //                   , 'repComment':repComment
-      //                   , 'repURL':repURL
-      //                   , 'sendPerson': ''
-      //                   , 'isOK' :false
-      //   };
-      //   $.post(pURL, postData, function(data){
-      //
-      //     console.log(data); //結果をアラートで表示
-      //   });
-      //
-      // return {cancel: true};
-
-
-      // socket.on('confirm_tweet', function (data) {
-      //   console.log('tweet confirmed!');
-      //   console.log(data);
-      //   return {cancel: false};
-      // });
-
-      // socket.on('confirmed', function(){
-      //   return {cancel: true};
-      // });
-      // return {cancel: true};
     },
-    {urls: ['*://twitter.com/i/tweet/create*','*://twitter.com/i/tweet/retweet*']},
+    {urls: ['*://twitter.com/i/tweet/create*','*://twitter.com/i/tweet/retweet*','https://api.twitter.com/1.1/statuses/update.json']},
     ['requestHeaders','blocking']);
+
+
+const requestReview = () =>{
+
+  if (isoverlapped != true){
+    new Notification('POST_pone', { tag: 'dev', body: '次のツイートが取り置かれました\n' + localStorage['repTW'] });
+    socket.emit('post_tweet',{
+      clientID: localStorage['clientID'],
+      authToken:  localStorage['authToken'],
+      repUUID: localStorage['repUUID'],
+      in_reply_to_status_id: localStorage['in_reply_to_status_id'],
+      repTW: localStorage['repTW'],
+      repComment: '',
+      repURL: localStorage['repURL'],
+      sendPerson: '',
+      isOK: false
+    }, function onack(response){
+      console.log(response);
+      if(response.confirm_result){
+        new Notification('POST_pone', { tag: 'dev', body: '投稿が承認されました!'});
+      }else{
+        new Notification('POST_pone', { tag: 'dev', body: '査読結果が出ました。\n' + response.draft_Text });
+        // chrome.runtime.sendMessage( response.draft_Text, function(response){
+        //   console.log('Message sended!'+ response);
+        //   confirm_result = true;
+        // });
+        // return {cancel: true};
+        // confirm_result = true;
+      }
+    });
+  }else{
+    console.log('重複が存在するので送信しませんでした');
+  }
 };
 
 socket.on('confirm_tweet', function (data) {
@@ -144,7 +110,7 @@ socket.on('resend_tweet', function (data) {
   new Notification('POST_pone', { tag: 'dev', body: '査読結果が来ました。\n' + data.draft_Text });
 });
 
-//
+
 // const postTweet = (clientID,authToken,repID,repTW,repUUID,repComment,repURL,isOK) =>{
 //     console.log(repID.toString(),repTW.toString());
 //   let pURL = 'http://localhost:3000/api/tweets';

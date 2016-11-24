@@ -45,6 +45,7 @@
     }
   },
   "dependencies": {
-    "body-parser": "^1.15.2"
+    "body-parser": "^1.15.2",
+    "twitter": "^1.4.0"
   }
 }
