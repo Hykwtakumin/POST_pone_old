@@ -18,17 +18,6 @@ chrome.runtime.onInstalled.addListener(details => {
 
 chrome.webRequest.onBeforeRequest.addListener(
   function(details) {
-    // console.log(details.requestBody.formData.values());
-    // let parsedDetails = JSON.stringify(details);
-    //   console.log(parsedDetails);
-    // if (parsedDetails.indexOf('in_reply_to_status_id') !== 1){
-    //   console.log(parsedDetails['status']);
-    // }
-    // let repURL = details.url;
-    // let repURLarray = repURL.split('/');
-    // console.log(repURL);
-
-    // localStorage['localBody'] = details.requestBody;
     localStorage['repUUID'] = uuid.v1();
     localStorage['repComment'] = '';
     localStorage['isOK'] = false;
@@ -86,12 +75,6 @@ const requestReview = () =>{
         new Notification('POST_pone', { tag: 'dev', body: '投稿が承認されました!'});
       }else{
         new Notification('POST_pone', { tag: 'dev', body: '査読結果が出ました。\n' + response.draft_Text });
-        // chrome.runtime.sendMessage( response.draft_Text, function(response){
-        //   console.log('Message sended!'+ response);
-        //   confirm_result = true;
-        // });
-        // return {cancel: true};
-        // confirm_result = true;
       }
     });
   }else{
@@ -110,55 +93,3 @@ socket.on('resend_tweet', function (data) {
   new Notification('POST_pone', { tag: 'dev', body: '査読結果が来ました。\n' + data.draft_Text });
 });
 
-
-// const postTweet = (clientID,authToken,repID,repTW,repUUID,repComment,repURL,isOK) =>{
-//     console.log(repID.toString(),repTW.toString());
-//   let pURL = 'http://localhost:3000/api/tweets';
-//   let postData = {
-//                   'clientID': clientID
-//                   ,'repUUID': repUUID
-//                   ,'authToken':authToken
-//                   , 'repID':repID
-//                   , 'repTW':repTW
-//                   , 'repComment':repComment
-//                   , 'repURL':repURL
-//                   , 'isOK' :isOK
-//   };
-//   $.post(pURL, postData, function(data){
-//     console.log(data); //結果をアラートで表示
-//   });
-//
-//   chrome.storage.local.set( {'repUUID': repUUID
-//     ,'authToken':authToken
-//     , 'repID':repID
-//     , 'repTW':repTW
-//     , 'repComment':repComment
-//     , 'repURL':repURL
-//     , 'isOK' :isOK}, function() {
-//     // Notify that we saved.
-//     console.log('Settings saved');
-//   });
-//   new Notification('POST_pone', { tag: 'dev', body: '次のツイートを取り置きました\n' + repTW });
-// };
-
-// const requetTweet = () => {
-//   // let reqUUID = '';
-//   // chrome.storage.local.get('reqUUID', function(items) {
-//   //   // reqUUID = items.repUUID;
-//   //   console.log(items.repUUID.toString());
-//   // });
-//   let rURL = 'http://localhost:3000/api/tweets/' + LASTrepUUID;
-//   $.get(rURL, function(res){
-//     console.log(JSON.stringify(res)); //結果をアラートで表示
-//     console.log(JSON.stringify(res).isOK);
-//       // if (res.body.isOK == true){
-//       //
-//       // }
-//   });
-// };
-//
-// chrome.alarms.onAlarm.addListener(function(alarm) {
-//   if (alarm && alarm.name == 'reqTweet') {
-//     requetTweet();
-//   }
-// });
